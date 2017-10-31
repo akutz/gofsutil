@@ -32,6 +32,7 @@ jobs:
         go:      1.8.5
         script:
           - go test -c -o /tmp/gofsutil.test .
+          - /tmp/gofsutil.test -test.run Bench -test.bench . -test.benchmem
           - sudo /tmp/gofsutil.test -test.v
 
       - <<: *test-stage
