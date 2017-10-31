@@ -9,7 +9,7 @@ sudo: false
 
 # Select Go as the language used to run the buid.
 language:       go
-go_import_path: github.com/thecodeteam/mount
+go_import_path: github.com/thecodeteam/gofsutil
 
 # Instruct Travis-CI to skip its built-in "go get"
 install: true
@@ -20,7 +20,7 @@ jobs:
       - &build-stage
         stage:   build
         go:      1.8.5
-        script:  go test -c -o mount.test .
+        script:  go test -c -o gofsutil.test .
 
       - <<: *build-stage
         go:      1.9.2
@@ -31,8 +31,8 @@ jobs:
         sudo:    true
         go:      1.8.5
         script:
-          - go test -c -o /tmp/mount.test .
-          - sudo /tmp/mount.test -test.v
+          - go test -c -o /tmp/gofsutil.test .
+          - sudo /tmp/gofsutil.test -test.v
 
       - <<: *test-stage
         go:      1.9.2

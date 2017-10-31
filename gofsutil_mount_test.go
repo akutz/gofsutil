@@ -1,4 +1,4 @@
-package mount_test
+package gofsutil_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/thecodeteam/mount"
+	"github.com/thecodeteam/gofsutil"
 )
 
 func TestBindMount(t *testing.T) {
@@ -19,28 +19,28 @@ func TestBindMount(t *testing.T) {
 		os.RemoveAll(src)
 		t.Fatal(err)
 	}
-	if err := mount.EvalSymlinks(&src); err != nil {
+	if err := gofsutil.EvalSymlinks(&src); err != nil {
 		os.RemoveAll(tgt)
 		os.RemoveAll(src)
 		t.Fatal(err)
 	}
-	if err := mount.EvalSymlinks(&tgt); err != nil {
+	if err := gofsutil.EvalSymlinks(&tgt); err != nil {
 		os.RemoveAll(tgt)
 		os.RemoveAll(src)
 		t.Fatal(err)
 	}
 	defer func() {
-		mount.Unmount(tgt)
+		gofsutil.Unmount(tgt)
 		os.RemoveAll(tgt)
 		os.RemoveAll(src)
 	}()
-	if err := mount.BindMount(src, tgt); err != nil {
+	if err := gofsutil.BindMount(src, tgt); err != nil {
 		t.Error(err)
 		t.Fail()
 		return
 	}
 	t.Logf("bind mount success: source=%s, target=%s", src, tgt)
-	mounts, err := mount.GetMounts(context.TODO())
+	mounts, err := gofsutil.GetMounts(context.TODO())
 	if err != nil {
 		t.Error(err)
 		t.Fail()
@@ -60,7 +60,7 @@ func TestBindMount(t *testing.T) {
 }
 
 func TestGetMounts(t *testing.T) {
-	mounts, err := mount.GetMounts(context.TODO())
+	mounts, err := gofsutil.GetMounts(context.TODO())
 	if err != nil {
 		t.Error(err)
 		t.Fail()
