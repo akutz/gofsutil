@@ -1,6 +1,6 @@
 // +build linux darwin
 
-package mount
+package gofsutil
 
 import (
 	"context"
@@ -20,17 +20,17 @@ import (
 // The 'options' parameter is a list of options. Please see mount(8) for
 // more information. If no options are required then please invoke Mount
 // with an empty or nil argument.
-func mount(source, target, fsType string, options []string) error {
+func (fs *FS) mount(source, target, fsType string, options []string) error {
 
 	// All Linux distributes should support bind mounts.
-	if options, ok := isBind(options); ok {
-		return bindMount(source, target, options)
+	if options, ok := fs.isBind(options); ok {
+		return fs.bindMount(source, target, options)
 	}
-	return doMount("mount", source, target, fsType, options)
+	return fs.doMount("mount", source, target, fsType, options)
 }
 
 // doMount runs the mount command.
-func doMount(mntCmd, source, target, fsType string, options []string) error {
+func (fs *FS) doMount(mntCmd, source, target, fsType string, options []string) error {
 
 	mountArgs := MakeMountArgs(source, target, fsType, options)
 	args := strings.Join(mountArgs, " ")
@@ -54,7 +54,7 @@ func doMount(mntCmd, source, target, fsType string, options []string) error {
 }
 
 // unmount unmounts the target.
-func unmount(target string) error {
+func (fs *FS) unmount(target string) error {
 	f := log.Fields{
 		"path": target,
 		"cmd":  "umount",
@@ -79,7 +79,7 @@ func unmount(target string) error {
 //
 // The returned options will be "bind", "remount", and the provided
 // list of options.
-func isBind(options []string) ([]string, bool) {
+func (fs *FS) isBind(options []string) ([]string, bool) {
 	bind := false
 	remountOpts := append([]string(nil), bindRemountOpts...)
 
@@ -99,12 +99,9 @@ func isBind(options []string) ([]string, bool) {
 }
 
 // getDevMounts returns a slice of all mounts for dev
-func getDevMounts(
-	ctx context.Context,
-	dev string,
-	processor EntryScanFunc) ([]Info, error) {
+func (fs *FS) getDevMounts(ctx context.Context, dev string) ([]Info, error) {
 
-	allMnts, err := getMounts(ctx, processor)
+	allMnts, err := fs.getMounts(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -117,33 +114,4 @@ func getDevMounts(
 	}
 
 	return mountInfos, nil
-}
-
-// MakeMountArgs makes the arguments to the mount(8) command.
-func MakeMountArgs(source, target, fsType string, options []string) []string {
-
-	// Build mount command as follows:
-	//   mount [-t $fsType] [-o $options] [$source] $target
-
-	// Remove all duplicates and empty strings from options
-	opts := make([]string, 0)
-	for _, x := range options {
-		if x != "" && !contains(opts, x) {
-			opts = append(opts, x)
-		}
-	}
-
-	mountArgs := []string{}
-	if len(fsType) > 0 {
-		mountArgs = append(mountArgs, "-t", fsType)
-	}
-	if len(options) > 0 {
-		mountArgs = append(mountArgs, "-o", strings.Join(opts, ","))
-	}
-	if len(source) > 0 {
-		mountArgs = append(mountArgs, source)
-	}
-	mountArgs = append(mountArgs, target)
-
-	return mountArgs
 }

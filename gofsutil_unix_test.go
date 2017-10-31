@@ -1,12 +1,12 @@
 // +build linux darwin
 
-package mount_test
+package gofsutil_test
 
 import (
 	"strings"
 	"testing"
 
-	"github.com/thecodeteam/mount"
+	"github.com/thecodeteam/gofsutil"
 )
 
 func TestMountArgs(t *testing.T) {
@@ -54,7 +54,7 @@ func TestMountArgs(t *testing.T) {
 		tt := tt
 		t.Run("", func(st *testing.T) {
 			st.Parallel()
-			opts := mount.MakeMountArgs(tt.src, tt.tgt, tt.fst, tt.opts)
+			opts := gofsutil.MakeMountArgs(tt.src, tt.tgt, tt.fst, tt.opts)
 			optsStr := strings.Join(opts, " ")
 			if optsStr != tt.result {
 				t.Errorf("Formatting of mount args incorrect, got: %s want: %s",

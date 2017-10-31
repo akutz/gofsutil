@@ -1,4 +1,4 @@
-package mount
+package gofsutil
 
 import (
 	"bufio"
@@ -7,10 +7,87 @@ import (
 	"hash/fnv"
 	"io"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
+
+// ProcMountsFields is fields per line in procMountsPath as per
+// https://www.kernel.org/doc/Documentation/filesystems/proc.txt
+const ProcMountsFields = 9
+
+// Info is information about a single mount point.
+type Info struct {
+	// Device is the device on which the filesystem is mounted.
+	Device string
+
+	// Path is the filesystem path to which the device is mounted.
+	Path string
+
+	// Source may be set to one of two values:
+	//
+	//   1. If this is a bind mount created with "bindfs" then Source
+	//      is set to the filesystem path bind mounted to Path.
+	//
+	//   2. If this is any other type of mount then Source is set to
+	//      a concatenation of the mount source and the root of
+	//      the mount within the file system (fields 10 & 4 from
+	//      the section on /proc/<pid>/mountinfo at
+	//      https://www.kernel.org/doc/Documentation/filesystems/proc.txt).
+	//
+	// It is not possible to diffentiate a native bind mount from a
+	// non-bind mount after the native bind mount has been created.
+	// Therefore, while the Source field will be set to the filesystem
+	// path bind mounted to Path for native bind mounts, the value of
+	// the Source field can in no way be used to determine *if* a mount
+	// is a bind mount.
+	Source string
+
+	// Type is the filesystem type.
+	Type string
+
+	// Opts are the mount options used to create this mount point.
+	Opts []string
+}
+
+// Entry is a superset of Info and maps to the fields of a mount table
+// entry:
+//
+//   (1) mount ID:  unique identifier of the mount (may be reused after umount)
+//   (2) parent ID:  ID of parent (or of self for the top of the mount tree)
+//   (3) major:minor:  value of st_dev for files on filesystem
+//   (4) root:  root of the mount within the filesystem
+//   (5) mount point:  mount point relative to the process's root
+//   (6) mount options:  per mount options
+//   (7) optional fields:  zero or more fields of the form "tag[:value]"
+//   (8) separator:  marks the end of the optional fields
+//   (9) filesystem type:  name of filesystem of the form "type[.subtype]"
+//   (10) mount source:  filesystem specific information or "none"
+//   (11) super options:  per super block options
+type Entry struct {
+	// Root of the mount within the filesystem.
+	Root string
+
+	// MountPoint relative to the process's root
+	MountPoint string
+
+	// MountOpts are per-mount options.
+	MountOpts []string
+
+	// FSType is the name of filesystem of the form "type[.subtype]".
+	FSType string
+
+	// MountSource is filesystem specific information or "none"
+	MountSource string
+}
+
+// EntryScanFunc defines the signature of the function that is optionally
+// provided to the functions in this package that scan the mount table.
+// The mount entry table is ignored when this function returns a false
+// value or error.
+type EntryScanFunc func(
+	ctx context.Context,
+	entry Entry,
+	cache map[string]Entry) (Info, bool, error)
 
 // DefaultEntryScanFunc returns the default entry scan function.
 func DefaultEntryScanFunc() EntryScanFunc {
@@ -54,10 +131,6 @@ func defaultEntryScanFunc(
 
 	return
 }
-
-// ProcMountsFields is fields per line in procMountsPath as per
-// https://www.kernel.org/doc/Documentation/filesystems/proc.txt
-const ProcMountsFields = 9
 
 /*
 ReadProcMountsFrom parses the contents of a mount table file, typically
@@ -160,23 +233,28 @@ func ReadProcMountsFrom(
 	return infos, hash.Sum32(), nil
 }
 
-// EvalSymlinks evaluates the provided path and updates it to remove
-// any symlinks in its structure, replacing them with the actual path
-// components.
-func EvalSymlinks(symPath *string) error {
-	realPath, err := filepath.EvalSymlinks(*symPath)
-	if err != nil {
-		return err
+// MakeMountArgs makes the arguments to the mount(8) command.
+//
+// The argument list returned is built as follows:
+//
+//         mount [-t $fsType] [-o $options] [$source] $target
+func MakeMountArgs(source, target, fsType string, opts []string) []string {
+	args := []string{}
+	if len(fsType) > 0 {
+		args = append(args, "-t", fsType)
 	}
-	*symPath = realPath
-	return nil
-}
-
-func contains(list []string, item string) bool {
-	for _, x := range list {
-		if x == item {
-			return true
+	if len(opts) > 0 {
+		// Remove any duplicates or empty options from the provided list and
+		// check the length of the list once more in case the list is now empty
+		// once empty options were removed.
+		if opts = RemoveDuplicates(opts); len(opts) > 0 {
+			args = append(args, "-o", strings.Join(opts, ","))
 		}
 	}
-	return false
+	if len(source) > 0 {
+		args = append(args, source)
+	}
+	args = append(args, target)
+
+	return args
 }

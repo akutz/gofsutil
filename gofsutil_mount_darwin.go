@@ -1,4 +1,4 @@
-package mount
+package gofsutil
 
 import (
 	"bufio"
@@ -16,12 +16,9 @@ var (
 )
 
 // getDiskFormat uses 'lsblk' to see if the given disk is unformated
-func getDiskFormat(
-	ctx context.Context,
-	disk string,
-	scanEntry EntryScanFunc) (string, error) {
+func (fs *FS) getDiskFormat(ctx context.Context, disk string) (string, error) {
 
-	mps, err := getMounts(ctx, scanEntry)
+	mps, err := fs.getMounts(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -34,7 +31,7 @@ func getDiskFormat(
 }
 
 // formatAndMount uses unix utils to format and mount the given disk
-func formatAndMount(
+func (fs *FS) formatAndMount(
 	ctx context.Context,
 	source, target, fsType string,
 	options []string) error {
@@ -43,9 +40,7 @@ func formatAndMount(
 }
 
 // getMounts returns a slice of all the mounted filesystems
-func getMounts(
-	ctx context.Context,
-	scanEntry EntryScanFunc) ([]Info, error) {
+func (fs *FS) getMounts(ctx context.Context) ([]Info, error) {
 
 	out, err := exec.Command("mount").CombinedOutput()
 	if err != nil {
@@ -94,6 +89,6 @@ func getMounts(
 }
 
 // bindMount performs a bind mount
-func bindMount(source, target string, options []string) error {
-	return doMount("bindfs", source, target, "", options)
+func (fs *FS) bindMount(source, target string, options []string) error {
+	return fs.doMount("bindfs", source, target, "", options)
 }

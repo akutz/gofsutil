@@ -1,4 +1,4 @@
-package mount_test
+package gofsutil_test
 
 import (
 	"context"
@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/thecodeteam/mount"
+	"github.com/thecodeteam/gofsutil"
 )
 
-func newTestEntryScanFunc(t *testing.T) mount.EntryScanFunc {
-	//return mount.DefaultEntryScanFunc()
+func newTestEntryScanFunc(t *testing.T) gofsutil.EntryScanFunc {
+	//return gofsutil.DefaultEntryScanFunc()
 	return (&testEntryScanFunc{t}).scan
 }
 
@@ -21,8 +21,9 @@ type testEntryScanFunc struct {
 
 func (p *testEntryScanFunc) scan(
 	ctx context.Context,
-	entry mount.Entry,
-	cache map[string]mount.Entry) (info mount.Info, valid bool, failed error) {
+	entry gofsutil.Entry,
+	cache map[string]gofsutil.Entry) (
+	info gofsutil.Info, valid bool, failed error) {
 
 	// p.t.Logf("root=%s\tmountPoint=%s\t"+
 	// 	"fsType=%s\tmountSource=%s\tmountOpts=%v",
@@ -69,11 +70,11 @@ func (p *testEntryScanFunc) scan(
 
 func TestReadProcMountsFrom(t *testing.T) {
 
-	mountInfos, _, err := mount.ReadProcMountsFrom(
+	mountInfos, _, err := gofsutil.ReadProcMountsFrom(
 		context.TODO(),
 		strings.NewReader(procMountInfoData),
 		false,
-		mount.ProcMountsFields,
+		gofsutil.ProcMountsFields,
 		newTestEntryScanFunc(t))
 	if err != nil {
 		t.Fatal(err)

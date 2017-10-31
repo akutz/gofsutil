@@ -1,4 +1,4 @@
-package mount
+package gofsutil
 
 import (
 	"context"
@@ -22,10 +22,7 @@ var (
 )
 
 // getDiskFormat uses 'lsblk' to see if the given disk is unformatted
-func getDiskFormat(
-	ctx context.Context,
-	disk string,
-	scanEntry EntryScanFunc) (string, error) {
+func (fs *FS) getDiskFormat(ctx context.Context, disk string) (string, error) {
 
 	args := []string{"-n", "-o", "FSTYPE", disk}
 
@@ -64,7 +61,7 @@ func getDiskFormat(
 }
 
 // formatAndMount uses unix utils to format and mount the given disk
-func formatAndMount(
+func (fs *FS) formatAndMount(
 	ctx context.Context,
 	source, target, fsType string,
 	options []string) error {
@@ -79,14 +76,14 @@ func formatAndMount(
 
 	// Try to mount the disk
 	log.WithFields(f).Info("attempting to mount disk")
-	mountErr := mount(source, target, fsType, options)
+	mountErr := fs.mount(source, target, fsType, options)
 	if mountErr == nil {
 		return nil
 	}
 
 	// Mount failed. This indicates either that the disk is unformatted or
 	// it contains an unexpected filesystem.
-	existingFormat, err := getDiskFormat(ctx, source, nil)
+	existingFormat, err := fs.getDiskFormat(ctx, source)
 	if err != nil {
 		return err
 	}
@@ -114,7 +111,7 @@ func formatAndMount(
 		// the disk has been formatted successfully try to mount it again.
 		log.WithFields(f).Info(
 			"disk successfully formatted")
-		return mount(source, target, fsType, options)
+		return fs.mount(source, target, fsType, options)
 	}
 
 	// Disk is already formatted and failed to mount
@@ -130,26 +127,24 @@ func formatAndMount(
 }
 
 // bindMount performs a bind mount
-func bindMount(source, target string, options []string) error {
-	err := doMount("mount", source, target, "", []string{"bind"})
+func (fs *FS) bindMount(source, target string, options []string) error {
+	err := fs.doMount("mount", source, target, "", []string{"bind"})
 	if err != nil {
 		return err
 	}
-	return doMount("mount", source, target, "", options)
+	return fs.doMount("mount", source, target, "", options)
 }
 
 // getMounts returns a slice of all the mounted filesystems
-func getMounts(
-	ctx context.Context,
-	scanEntry EntryScanFunc) ([]Info, error) {
+func (fs *FS) getMounts(ctx context.Context) ([]Info, error) {
 
-	_, hash1, err := readProcMounts(ctx, procMountsPath, false, scanEntry)
+	_, hash1, err := fs.readProcMounts(ctx, procMountsPath, false)
 	if err != nil {
 		return nil, err
 	}
 
 	for i := 0; i < procMountsRetries; i++ {
-		mps, hash2, err := readProcMounts(ctx, procMountsPath, true, scanEntry)
+		mps, hash2, err := fs.readProcMounts(ctx, procMountsPath, true)
 		if err != nil {
 			return nil, err
 		}
@@ -166,11 +161,10 @@ func getMounts(
 
 // readProcMounts reads procMountsInfo and produce a hash
 // of the contents and a list of the mounts as Info objects.
-func readProcMounts(
+func (fs *FS) readProcMounts(
 	ctx context.Context,
 	path string,
-	info bool,
-	scanEntry EntryScanFunc) ([]Info, uint32, error) {
+	info bool) ([]Info, uint32, error) {
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -178,5 +172,5 @@ func readProcMounts(
 	}
 	defer file.Close()
 
-	return ReadProcMountsFrom(ctx, file, !info, ProcMountsFields, scanEntry)
+	return ReadProcMountsFrom(ctx, file, !info, ProcMountsFields, fs.ScanEntry)
 }
