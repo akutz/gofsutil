@@ -11,7 +11,6 @@ type FS struct {
 
 // GetDiskFormat uses 'lsblk' to see if the given disk is unformatted.
 func (fs *FS) GetDiskFormat(ctx context.Context, disk string) (string, error) {
-
 	return fs.getDiskFormat(ctx, disk)
 }
 
@@ -21,7 +20,7 @@ func (fs *FS) FormatAndMount(
 	source, target, fsType string,
 	options ...string) error {
 
-	return fs.formatAndMount(ctx, source, target, fsType, options)
+	return fs.formatAndMount(ctx, source, target, fsType, options...)
 }
 
 // Mount mounts source to target as fstype with given options.
@@ -33,24 +32,32 @@ func (fs *FS) FormatAndMount(
 // The 'options' parameter is a list of options. Please see mount(8) for
 // more information. If no options are required then please invoke Mount
 // with an empty or nil argument.
-func (fs *FS) Mount(source, target, fsType string, options ...string) error {
-	return fs.mount(source, target, fsType, options)
+func (fs *FS) Mount(
+	ctx context.Context,
+	source, target, fsType string,
+	options ...string) error {
+
+	return fs.mount(ctx, source, target, fsType, options...)
 }
 
 // BindMount behaves like Mount was called with a "bind" flag set
 // in the options list.
-func (fs *FS) BindMount(source, target string, options ...string) error {
+func (fs *FS) BindMount(
+	ctx context.Context,
+	source, target string,
+	options ...string) error {
+
 	if options == nil {
 		options = []string{"bind"}
 	} else {
 		options = append(options, "bind")
 	}
-	return fs.mount(source, target, "", options)
+	return fs.mount(ctx, source, target, "", options...)
 }
 
 // Unmount unmounts the target.
-func (fs *FS) Unmount(target string) error {
-	return fs.unmount(target)
+func (fs *FS) Unmount(ctx context.Context, target string) error {
+	return fs.unmount(ctx, target)
 }
 
 // GetMounts returns a slice of all the mounted filesystems.

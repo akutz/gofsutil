@@ -19,22 +19,22 @@ func TestBindMount(t *testing.T) {
 		os.RemoveAll(src)
 		t.Fatal(err)
 	}
-	if err := gofsutil.EvalSymlinks(&src); err != nil {
+	if err := gofsutil.EvalSymlinks(context.TODO(), &src); err != nil {
 		os.RemoveAll(tgt)
 		os.RemoveAll(src)
 		t.Fatal(err)
 	}
-	if err := gofsutil.EvalSymlinks(&tgt); err != nil {
+	if err := gofsutil.EvalSymlinks(context.TODO(), &tgt); err != nil {
 		os.RemoveAll(tgt)
 		os.RemoveAll(src)
 		t.Fatal(err)
 	}
 	defer func() {
-		gofsutil.Unmount(tgt)
+		gofsutil.Unmount(context.TODO(), tgt)
 		os.RemoveAll(tgt)
 		os.RemoveAll(src)
 	}()
-	if err := gofsutil.BindMount(src, tgt); err != nil {
+	if err := gofsutil.BindMount(context.TODO(), src, tgt); err != nil {
 		t.Error(err)
 		t.Fail()
 		return

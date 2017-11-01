@@ -3,6 +3,7 @@
 package gofsutil_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -54,7 +55,8 @@ func TestMountArgs(t *testing.T) {
 		tt := tt
 		t.Run("", func(st *testing.T) {
 			st.Parallel()
-			opts := gofsutil.MakeMountArgs(tt.src, tt.tgt, tt.fst, tt.opts)
+			opts := gofsutil.MakeMountArgs(
+				context.TODO(), tt.src, tt.tgt, tt.fst, tt.opts...)
 			optsStr := strings.Join(opts, " ")
 			if optsStr != tt.result {
 				t.Errorf("Formatting of mount args incorrect, got: %s want: %s",
