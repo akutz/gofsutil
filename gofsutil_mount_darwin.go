@@ -34,7 +34,7 @@ func (fs *FS) getDiskFormat(ctx context.Context, disk string) (string, error) {
 func (fs *FS) formatAndMount(
 	ctx context.Context,
 	source, target, fsType string,
-	options []string) error {
+	opts ...string) error {
 
 	return ErrNotImplemented
 }
@@ -89,6 +89,9 @@ func (fs *FS) getMounts(ctx context.Context) ([]Info, error) {
 }
 
 // bindMount performs a bind mount
-func (fs *FS) bindMount(source, target string, options []string) error {
-	return fs.doMount("bindfs", source, target, "", options)
+func (fs *FS) bindMount(
+	ctx context.Context,
+	source, target string, opts ...string) error {
+
+	return fs.doMount(ctx, "bindfs", source, target, "", opts...)
 }

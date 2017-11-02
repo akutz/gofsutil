@@ -20,19 +20,25 @@ import (
 // The 'options' parameter is a list of options. Please see mount(8) for
 // more information. If no options are required then please invoke Mount
 // with an empty or nil argument.
-func (fs *FS) mount(source, target, fsType string, options []string) error {
+func (fs *FS) mount(
+	ctx context.Context,
+	source, target, fsType string,
+	opts ...string) error {
 
 	// All Linux distributes should support bind mounts.
-	if options, ok := fs.isBind(options); ok {
-		return fs.bindMount(source, target, options)
+	if opts, ok := fs.isBind(ctx, opts...); ok {
+		return fs.bindMount(ctx, source, target, opts...)
 	}
-	return fs.doMount("mount", source, target, fsType, options)
+	return fs.doMount(ctx, "mount", source, target, fsType, opts...)
 }
 
 // doMount runs the mount command.
-func (fs *FS) doMount(mntCmd, source, target, fsType string, options []string) error {
+func (fs *FS) doMount(
+	ctx context.Context,
+	mntCmd, source, target, fsType string,
+	opts ...string) error {
 
-	mountArgs := MakeMountArgs(source, target, fsType, options)
+	mountArgs := MakeMountArgs(ctx, source, target, fsType, opts...)
 	args := strings.Join(mountArgs, " ")
 
 	f := log.Fields{
@@ -54,7 +60,7 @@ func (fs *FS) doMount(mntCmd, source, target, fsType string, options []string) e
 }
 
 // unmount unmounts the target.
-func (fs *FS) unmount(target string) error {
+func (fs *FS) unmount(ctx context.Context, target string) error {
 	f := log.Fields{
 		"path": target,
 		"cmd":  "umount",
@@ -79,11 +85,11 @@ func (fs *FS) unmount(target string) error {
 //
 // The returned options will be "bind", "remount", and the provided
 // list of options.
-func (fs *FS) isBind(options []string) ([]string, bool) {
+func (fs *FS) isBind(ctx context.Context, opts ...string) ([]string, bool) {
 	bind := false
 	remountOpts := append([]string(nil), bindRemountOpts...)
 
-	for _, o := range options {
+	for _, o := range opts {
 		switch o {
 		case "bind":
 			bind = true

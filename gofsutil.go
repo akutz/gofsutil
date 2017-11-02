@@ -24,9 +24,9 @@ func GetDiskFormat(ctx context.Context, disk string) (string, error) {
 func FormatAndMount(
 	ctx context.Context,
 	source, target, fsType string,
-	options ...string) error {
+	opts ...string) error {
 
-	return fs.FormatAndMount(ctx, source, target, fsType, options...)
+	return fs.FormatAndMount(ctx, source, target, fsType, opts...)
 }
 
 // Mount mounts source to target as fstype with given options.
@@ -38,19 +38,27 @@ func FormatAndMount(
 // The 'options' parameter is a list of options. Please see mount(8) for
 // more information. If no options are required then please invoke Mount
 // with an empty or nil argument.
-func Mount(source, target, fsType string, options ...string) error {
-	return fs.Mount(source, target, fsType, options...)
+func Mount(
+	ctx context.Context,
+	source, target, fsType string,
+	opts ...string) error {
+
+	return fs.Mount(ctx, source, target, fsType, opts...)
 }
 
 // BindMount behaves like Mount was called with a "bind" flag set
 // in the options list.
-func BindMount(source, target string, options ...string) error {
-	return fs.BindMount(source, target, options...)
+func BindMount(
+	ctx context.Context,
+	source, target string,
+	opts ...string) error {
+
+	return fs.BindMount(ctx, source, target, opts...)
 }
 
 // Unmount unmounts the target.
-func Unmount(target string) error {
-	return fs.Unmount(target)
+func Unmount(ctx context.Context, target string) error {
+	return fs.Unmount(ctx, target)
 }
 
 // GetMounts returns a slice of all the mounted filesystems.
@@ -78,7 +86,7 @@ func GetDevMounts(ctx context.Context, dev string) ([]Info, error) {
 // EvalSymlinks evaluates the provided path and updates it to remove
 // any symlinks in its structure, replacing them with the actual path
 // components.
-func EvalSymlinks(symPath *string) error {
+func EvalSymlinks(ctx context.Context, symPath *string) error {
 	realPath, err := filepath.EvalSymlinks(*symPath)
 	if err != nil {
 		return err

@@ -64,19 +64,19 @@ func (fs *FS) getDiskFormat(ctx context.Context, disk string) (string, error) {
 func (fs *FS) formatAndMount(
 	ctx context.Context,
 	source, target, fsType string,
-	options []string) error {
+	opts ...string) error {
 
-	options = append(options, "defaults")
+	opts = append(opts, "defaults")
 	f := log.Fields{
 		"source":  source,
 		"target":  target,
 		"fsType":  fsType,
-		"options": options,
+		"options": opts,
 	}
 
 	// Try to mount the disk
 	log.WithFields(f).Info("attempting to mount disk")
-	mountErr := fs.mount(source, target, fsType, options)
+	mountErr := fs.mount(ctx, source, target, fsType, opts...)
 	if mountErr == nil {
 		return nil
 	}
@@ -111,7 +111,7 @@ func (fs *FS) formatAndMount(
 		// the disk has been formatted successfully try to mount it again.
 		log.WithFields(f).Info(
 			"disk successfully formatted")
-		return fs.mount(source, target, fsType, options)
+		return fs.mount(ctx, source, target, fsType, opts...)
 	}
 
 	// Disk is already formatted and failed to mount
@@ -127,12 +127,16 @@ func (fs *FS) formatAndMount(
 }
 
 // bindMount performs a bind mount
-func (fs *FS) bindMount(source, target string, options []string) error {
-	err := fs.doMount("mount", source, target, "", []string{"bind"})
+func (fs *FS) bindMount(
+	ctx context.Context,
+	source, target string,
+	opts ...string) error {
+
+	err := fs.doMount(ctx, "mount", source, target, "", "bind")
 	if err != nil {
 		return err
 	}
-	return fs.doMount("mount", source, target, "", options)
+	return fs.doMount(ctx, "mount", source, target, "", opts...)
 }
 
 // getMounts returns a slice of all the mounted filesystems

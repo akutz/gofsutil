@@ -238,7 +238,11 @@ func ReadProcMountsFrom(
 // The argument list returned is built as follows:
 //
 //         mount [-t $fsType] [-o $options] [$source] $target
-func MakeMountArgs(source, target, fsType string, opts []string) []string {
+func MakeMountArgs(
+	ctx context.Context,
+	source, target, fsType string,
+	opts ...string) []string {
+
 	args := []string{}
 	if len(fsType) > 0 {
 		args = append(args, "-t", fsType)
