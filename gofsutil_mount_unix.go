@@ -114,7 +114,7 @@ func (fs *FS) getDevMounts(ctx context.Context, dev string) ([]Info, error) {
 
 	var mountInfos []Info
 	for _, m := range allMnts {
-		if m.Device == dev {
+		if m.Device == dev || (m.Device == "devtmpfs" && m.Source == dev) {
 			mountInfos = append(mountInfos, m)
 		}
 	}
