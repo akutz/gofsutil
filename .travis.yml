@@ -20,7 +20,9 @@ jobs:
       - &build-stage
         stage:   build
         go:      1.8.5
-        script:  go test -c -o gofsutil.test .
+        script:
+          - go test -c -o gofsutil.test .
+          - ./gofsutil.test -test.run Bench -test.bench . -test.benchmem
 
       - <<: *build-stage
         go:      1.9.2
@@ -37,3 +39,13 @@ jobs:
 
       - <<: *test-stage
         go:      1.9.2
+
+      - <<: *test-stage
+        os:             osx
+        go:             1.8.5
+        before-install: brew update && (brew outdated bindfs || brew upgrade bindfs)
+
+      - <<: *test-stage
+        os:             osx
+        go:             1.9.2
+        before-install: brew update && (brew outdated bindfs || brew upgrade bindfs)
